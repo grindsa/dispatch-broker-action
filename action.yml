@@ -12,14 +12,35 @@ inputs:
     description: 'Git ref (branch, tag, or SHA) to run the workflow on'
     required: true
     default: 'main'
-  excluded_workflows:
+  exclude_workflows:
     description: 'Comma-separated list of workflow filenames to exclude from dispatching'
-    required: false
-    default: ''
+    required: true
   client_payload:
     description: 'JSON string to pass as client_payload to the workflow dispatch event'
     required: false
     default: ''
+
 runs:
-  using: 'python3'
-  main: 'main.py'
+  using: 'composite'
+  steps:
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests
+      shell: bash
+
+    - name: Set GitHub Path
+      run: echo "$GITHUB_ACTION_PATH" >> $GITHUB_PATH
+      shell: bash
+      env:
+        GITHUB_ACTION_PATH: ${{ github.action_path }}
+
+    - name: Run main.py
+      run: main.py --token "${{ inputs.token }}" --repository "${{ inputs.repository }}" --ref "${{ inputs.ref }}" --exclude_workflows "${{ inputs.exclude_workflows }}" --client_payload '${{ inputs.client_payload }}'
+      shell: bash
