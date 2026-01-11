@@ -2,7 +2,7 @@ name: 'Dispatch Broker Action'
 description: 'A GitHub Action to dispatch workflows via the GitHub API using a Python script.'
 author: 'Your Name <your.email@example.com>'
 inputs:
-  github_token:
+  token:
     description: 'GitHub token with repo/workflow permissions'
     required: true
   repository:
@@ -14,6 +14,10 @@ inputs:
     default: 'main'
   excluded_workflows:
     description: 'Comma-separated list of workflow filenames to exclude from dispatching'
+    required: false
+    default: ''
+  client_payload:
+    description: 'JSON string to pass as client_payload to the workflow dispatch event'
     required: false
     default: ''
 runs:
