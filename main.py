@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Dispatch GitHub Actions workflows in a repository, with option to exclude certain workflows."""
 import argparse
+from html import parser
 import json
 import requests
 
@@ -30,8 +31,10 @@ def get_workflows(token, repo, ref):
 
 
 def dispatch_workflow(token, repo, ref, yaml_files, exclude_workflows, client_payload):
-    """dispatch a workflow"""
-
+    """
+    Dispatch workflows using the content from the specified ref (branch, tag, or SHA).
+    The workflow will be executed as defined in that ref, not just the default branch.
+    """
     url_template = (
         f"https://api.github.com/repos/{repo}/actions/workflows/{{}}/dispatches"
     )
@@ -70,18 +73,33 @@ def main():
     parser.add_argument(
         "--client_payload", default="{}", help="JSON string of workflow inputs"
     )
-    parser.add_argument(
+    wf_grp = parser.add_mutually_exclusive_group(required=True)
+    wf_grp.add_argument(
+        "--workflows", default=None, help="workflows to include"
+    )
+    wf_grp.add_argument(
         "--exclude_workflows", default=None, help="workflows to exclude"
     )
-    args = parser.parse_args()
-    exclude_workflows = (
-        [w.strip() for w in args.exclude_workflows.split(",")]
-        if args.exclude_workflows
-        else []
-    )
 
-    # Get all workflow files
-    yaml_files = get_workflows(args.token, args.repository, args.ref)
+    args = parser.parse_args()
+
+    include_workflows = None
+    exclude_workflows = None
+
+    if args.workflows:
+        include_workflows = [w.strip() for w in args.workflows.split(",")]
+        exclude_workflows = None
+
+    elif args.exclude_workflows:
+        exclude_workflows = [w.strip() for w in args.exclude_workflows.split(",")]
+        include_workflows = None
+
+    if not include_workflows:
+        # Get all workflow files
+        yaml_files = get_workflows(args.token, args.repository, args.ref)
+    else:
+        yaml_files = include_workflows
+
 
     # Dispatch workflows
     dispatch_workflow(
